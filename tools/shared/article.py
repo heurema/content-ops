@@ -47,11 +47,11 @@ def parse_article(path: str) -> ArticleData:
         tags = [t.strip() for t in tags.split(",")]
 
     return ArticleData(
-        title=str(data.get("title", "")),
-        description=str(data.get("description", "")),
-        date=str(data.get("date", "")),
+        title=data.get("title") or "",
+        description=data.get("description") or "",
+        date=str(data.get("date") or ""),
         tags=tags,
-        lang=str(data.get("lang", "en")),
+        lang=data.get("lang") or "en",
         slug=slug,
         body=body,
         canonical_url=canonical_url,
@@ -88,7 +88,11 @@ def update_frontmatter(path: str, updates: dict[str, Any]) -> None:
         os.fsync(tmp.fileno())
         tmp_path = tmp.name
 
-    os.replace(tmp_path, path)
+    try:
+        os.replace(tmp_path, path)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
 
 
 def content_hash(body: str) -> str:
@@ -105,17 +109,25 @@ def slugify_tag(tag: str) -> str:
     return tag
 
 
+_OPEN_RE = re.compile(r"\A(?:\ufeff)?---[ \t]*\r?\n")
+_CLOSE_RE = re.compile(r"(?m)^---[ \t]*\r?$")
+
+
 def _split_frontmatter(text: str) -> tuple[str, str]:
-    """Split '---\\nYAML\\n---\\nbody' into (yaml_text, body_text)."""
-    if not text.startswith("---"):
+    """Split '---\\nYAML\\n---\\nbody' into (yaml_text, body_text).
+
+    Closing delimiter must be '---' at column 0 (no leading whitespace),
+    so '---' inside indented YAML block scalars is never misidentified.
+    """
+    open_match = _OPEN_RE.match(text)
+    if not open_match:
         return "", text
-    # Find closing ---
-    end = text.find("\n---", 3)
-    if end == -1:
+    yaml_start = open_match.end()
+    close_match = _CLOSE_RE.search(text, yaml_start)
+    if not close_match:
         return "", text
-    fm = text[3:end].strip()
-    body = text[end + 4:]  # skip \n---
-    # body may start with \n
-    if body.startswith("\n"):
-        body = body[1:]
-    return fm, body
+    fm = text[yaml_start:close_match.start()].strip()
+    body_start = close_match.end()
+    if text.startswith("\n", body_start):
+        body_start += 1
+    return fm, text[body_start:]
