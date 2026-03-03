@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+from shared.env import load as _load_env; _load_env()
 from shared.article import parse_article
 
 

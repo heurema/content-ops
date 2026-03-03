@@ -23,6 +23,7 @@ def test_missing_token_exits(tmp_path, monkeypatch, capsys):
     md.write_text("---\ntitle: T\ndescription: D\ndate: 2026-01-01\ntags: [a]\nlang: en\n---\nBody.\n")
     monkeypatch.delenv("HASHNODE_TOKEN", raising=False)
     monkeypatch.delenv("HASHNODE_PUBLICATION_ID", raising=False)
+    monkeypatch.setenv("CONTENT_OPS_NO_DOTENV", "1")
     with pytest.raises(SystemExit) as exc:
         mod = load_script("publish_hashnode")
         mod.main([str(md)])

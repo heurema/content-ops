@@ -23,6 +23,7 @@ def test_missing_api_key_exits(tmp_path, monkeypatch, capsys):
     md = tmp_path / "test.md"
     md.write_text("---\ntitle: T\ndescription: D\ndate: 2026-01-01\ntags: [python]\nlang: en\n---\nBody.\n")
     monkeypatch.delenv("DEVTO_API_KEY", raising=False)
+    monkeypatch.setenv("CONTENT_OPS_NO_DOTENV", "1")
     with pytest.raises(SystemExit) as exc:
         mod = load_script("publish_devto")
         mod.main([str(md)])

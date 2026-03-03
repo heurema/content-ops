@@ -17,6 +17,7 @@ from pathlib import Path
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
+from shared.env import load as _load_env; _load_env()
 from shared.article import ArticleData, parse_article, update_frontmatter, slugify_tag
 
 DEVTO_API_BASE = "https://dev.to/api"
