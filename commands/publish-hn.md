@@ -1,6 +1,6 @@
 ---
 name: publish-hn
-description: Generate a Hacker News submitlink URL for an article. Checks Algolia for duplicates. Human-in-loop — no auth required, no API posting.
+description: Generate a Hacker News submitlink URL for an article. Checks Algolia for duplicates. human-in-loop — no auth required, no API posting.
 ---
 
 Generate a Hacker News submit URL for the article at `$ARTICLE_PATH`.

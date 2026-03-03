@@ -22,9 +22,19 @@ Check that all platform credentials are configured correctly.
    curl -s -X POST https://gql.hashnode.com \
      -H "Authorization: $HASHNODE_TOKEN" \
      -H "Content-Type: application/json" \
-     -d '{"query":"{ me { id } }"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if 'data' in d else 'FAIL')"
+     -d '{"query":"{ me { id } }"}' | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+if d.get('data') and d['data'].get('me'):
+    print('OK')
+elif d.get('errors'):
+    print('FAIL: ' + d['errors'][0].get('message', 'auth error'))
+else:
+    print('FAIL: unexpected response')
+"
    ```
-   Check both `HASHNODE_TOKEN` and `HASHNODE_PUBLICATION_ID` are set.
+   Note: Hashnode GraphQL always returns HTTP 200 — auth errors appear in the response body.
+   Also check: `HASHNODE_PUBLICATION_ID` must be set (used when publishing, not in auth check).
 
    **Twitter/X:**
    Report whether all 4 X_* vars are set. No live ping (write-only free tier).
