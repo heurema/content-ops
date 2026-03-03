@@ -13,9 +13,26 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import requests
+
+_HTTP_TIMEOUT = (10, 30)
+_MAX_RETRIES = 3
+
+
+def _gql(headers, payload):
+    """Execute GraphQL request with retry on 429."""
+    for attempt in range(_MAX_RETRIES):
+        resp = requests.post(HASHNODE_API, headers=headers, json=payload, timeout=_HTTP_TIMEOUT)
+        if resp.status_code == 429:
+            wait = int(resp.headers.get("Retry-After", 2 ** attempt))
+            print(f"Rate limited — waiting {wait}s (attempt {attempt + 1}/{_MAX_RETRIES})", file=sys.stderr)
+            time.sleep(wait)
+            continue
+        return resp
+    return resp
 
 sys.path.insert(0, str(Path(__file__).parent))
 from shared.env import load as _load_env; _load_env()
@@ -26,6 +43,17 @@ HASHNODE_API = "https://gql.hashnode.com"
 PUBLISH_MUTATION = """
 mutation PublishPost($input: PublishPostInput!) {
   publishPost(input: $input) {
+    post {
+      id
+      url
+    }
+  }
+}
+"""
+
+UPDATE_MUTATION = """
+mutation UpdatePost($input: UpdatePostInput!) {
+  updatePost(input: $input) {
     post {
       id
       url
@@ -50,27 +78,38 @@ def build_variables(article: ArticleData, publication_id: str) -> dict:
 
 
 def publish(article: ArticleData, token: str, publication_id: str) -> tuple[str, str]:
-    """Execute GraphQL publishPost mutation. Returns (post_id, url)."""
+    """Create or update post via GraphQL. Returns (post_id, url)."""
     headers = {"Authorization": token, "Content-Type": "application/json"}
-    variables = build_variables(article, publication_id)
-    payload = {"query": PUBLISH_MUTATION, "variables": variables}
 
-    resp = requests.post(HASHNODE_API, headers=headers, json=payload)
+    if article.hashnode_id:
+        # Update existing post
+        variables = {"input": {"id": article.hashnode_id, **build_variables(article, publication_id)["input"]}}
+        payload = {"query": UPDATE_MUTATION, "variables": variables}
+        op_key = "updatePost"
+    else:
+        variables = build_variables(article, publication_id)
+        payload = {"query": PUBLISH_MUTATION, "variables": variables}
+        op_key = "publishPost"
+
+    resp = _gql(headers, payload)
     if resp.status_code != 200:
-        token_hint = token[:4] + "***"
-        print(
-            f"ERROR: Hashnode API {resp.status_code} (token={token_hint})",
-            file=sys.stderr,
-        )
+        body_preview = resp.text[:200] if resp.text else "(empty body)"
+        print(f"ERROR: Hashnode API {resp.status_code}: {body_preview}", file=sys.stderr)
         sys.exit(1)
 
     body = resp.json()
     if "errors" in body:
-        print(f"ERROR: GraphQL errors: {body['errors']}", file=sys.stderr)
+        # Sanitize: don't dump raw GraphQL errors (may echo content fragments)
+        error_msgs = [e.get("message", "unknown error") for e in body["errors"]]
+        print(f"ERROR: GraphQL errors: {'; '.join(error_msgs)}", file=sys.stderr)
         sys.exit(1)
 
-    post = body["data"]["publishPost"]["post"]
-    return post["id"], post["url"]
+    try:
+        post = body["data"][op_key]["post"]
+        return post["id"], post["url"]
+    except (KeyError, TypeError) as exc:
+        print(f"ERROR: Unexpected Hashnode response shape ({exc}): {str(body)[:200]}", file=sys.stderr)
+        sys.exit(1)
 
 
 def main(argv: list[str] | None = None) -> None:

@@ -31,6 +31,15 @@ from shared.article import parse_article
 # Check functions — each returns list of (level, message) tuples
 # ---------------------------------------------------------------------------
 
+def _line_has_dash_outside_code(line: str, char: str) -> bool:
+    """Return True if char appears in line outside inline code spans."""
+    if line.strip().startswith("```"):
+        return False
+    # Remove inline code spans before checking
+    line_clean = re.sub(r"`[^`\n]+`", "", line)
+    return char in line_clean
+
+
 def check_em_dashes(body: str) -> list[tuple[str, str]]:
     """Detect em dashes outside code blocks."""
     issues = []
@@ -42,7 +51,7 @@ def check_em_dashes(body: str) -> list[tuple[str, str]]:
         lines = [
             i + 1
             for i, line in enumerate(body.splitlines())
-            if "—" in line and not line.strip().startswith("```")
+            if _line_has_dash_outside_code(line, "—")
         ]
         issues.append((
             "ERROR",
@@ -92,6 +101,13 @@ def check_tag_format(tags: list[str]) -> list[tuple[str, str]]:
             "WARNING",
             f"Tags with hyphens will break dev.to: {bad} — use alphanumeric only"
         ))
+    # Tags with spaces will be slugified to hyphens by publish_devto — catch early
+    spaced = [t for t in tags if " " in t and t not in bad]
+    if spaced:
+        issues.append((
+            "WARNING",
+            f"Tags with spaces will become hyphenated after slugify (breaks dev.to): {spaced}"
+        ))
     return issues
 
 
@@ -99,9 +115,41 @@ def check_tag_format(tags: list[str]) -> list[tuple[str, str]]:
 # Runner
 # ---------------------------------------------------------------------------
 
+def fix_dashes(path: str) -> int:
+    """Replace em/en dashes outside code blocks in-place. Returns count of fixes."""
+    text = Path(path).read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    fixed = []
+    count = 0
+    in_fence = False
+    for line in lines:
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+        if in_fence or line.strip().startswith("```"):
+            fixed.append(line)
+            continue
+        # Replace outside inline code: temporarily mask inline code, fix, restore
+        segments = re.split(r"(`[^`\n]+`)", line)
+        new_segments = []
+        for seg in segments:
+            if seg.startswith("`") and seg.endswith("`"):
+                new_segments.append(seg)  # inline code: leave as-is
+            else:
+                orig = seg
+                seg = seg.replace("—", " - ").replace("–", "-")
+                if seg != orig:
+                    count += len([c for c in orig if c in "—–"])
+                new_segments.append(seg)
+        fixed.append("".join(new_segments))
+    if count:
+        Path(path).write_text("".join(fixed), encoding="utf-8")
+    return count
+
+
 def lint(path: str, strict: bool = False) -> int:
     article = parse_article(path)
-    body = Path(path).read_text(encoding="utf-8")
+    # Use article.body to avoid re-reading the file (TOCTOU)
+    body = article.body
 
     all_issues: list[tuple[str, str]] = []
     all_issues += check_required_frontmatter(article)
@@ -134,7 +182,14 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Lint article before publishing")
     parser.add_argument("article", help="Path to Markdown article")
     parser.add_argument("--strict", action="store_true", help="Fail on warnings too")
+    parser.add_argument("--fix", action="store_true", help="Auto-fix em/en dashes in-place")
     args = parser.parse_args(argv)
+    if args.fix:
+        n = fix_dashes(args.article)
+        if n:
+            print(f"Fixed {n} dash(es) in {args.article} — re-linting...")
+        else:
+            print("No dashes to fix.")
     sys.exit(lint(args.article, strict=args.strict))
 
 

@@ -65,3 +65,109 @@ def test_graphql_mutation_sent(tmp_path, monkeypatch):
         mod.main([str(md), "--confirm"])
     assert len(calls) == 1
     assert "publishPost" in calls[0]["query"] or "mutation" in calls[0]["query"].lower()
+
+
+def test_only_token_missing_exits(tmp_path, monkeypatch, capsys):
+    md = tmp_path / "test.md"
+    md.write_text("---\ntitle: T\ndescription: D\ndate: 2026-01-01\ntags: [a]\nlang: en\n---\nBody.\n")
+    monkeypatch.delenv("HASHNODE_TOKEN", raising=False)
+    monkeypatch.setenv("HASHNODE_PUBLICATION_ID", "pub123")
+    monkeypatch.setenv("CONTENT_OPS_NO_DOTENV", "1")
+    with pytest.raises(SystemExit) as exc:
+        mod = load_script("publish_hashnode")
+        mod.main([str(md)])
+    assert exc.value.code == 1
+    assert "HASHNODE_TOKEN" in capsys.readouterr().err
+
+
+def test_graphql_errors_in_body_exits(tmp_path, monkeypatch):
+    md = tmp_path / "test.md"
+    md.write_text("---\ntitle: T\ndescription: D\ndate: 2026-01-01\ntags: [a]\nlang: en\n---\nBody.\n")
+    monkeypatch.setenv("HASHNODE_TOKEN", "fake")
+    monkeypatch.setenv("HASHNODE_PUBLICATION_ID", "pub123")
+    monkeypatch.setenv("CONTENT_OPS_NO_DOTENV", "1")
+    mod = load_script("publish_hashnode")
+
+    def fake_post(url, *, headers, json, **kwargs):
+        r = MagicMock()
+        r.status_code = 200
+        r.json.return_value = {"errors": [{"message": "Unauthorized"}]}
+        return r
+
+    with patch("requests.post", side_effect=fake_post):
+        with pytest.raises(SystemExit) as exc:
+            mod.main([str(md), "--confirm"])
+    assert exc.value.code == 1
+
+
+def test_http_error_exits(tmp_path, monkeypatch):
+    md = tmp_path / "test.md"
+    md.write_text("---\ntitle: T\ndescription: D\ndate: 2026-01-01\ntags: [a]\nlang: en\n---\nBody.\n")
+    monkeypatch.setenv("HASHNODE_TOKEN", "fake")
+    monkeypatch.setenv("HASHNODE_PUBLICATION_ID", "pub123")
+    monkeypatch.setenv("CONTENT_OPS_NO_DOTENV", "1")
+    mod = load_script("publish_hashnode")
+
+    def fake_post(url, *, headers, json, **kwargs):
+        r = MagicMock()
+        r.status_code = 401
+        r.text = "Unauthorized"
+        return r
+
+    with patch("requests.post", side_effect=fake_post):
+        with pytest.raises(SystemExit) as exc:
+            mod.main([str(md), "--confirm"])
+    assert exc.value.code == 1
+
+
+def test_tag_truncation_to_five(tmp_path, monkeypatch):
+    md = tmp_path / "test.md"
+    md.write_text("---\ntitle: T\ndescription: D\ndate: 2026-01-01\ntags: [a,b,c,d,e,f,g]\nlang: en\n---\nBody.\n")
+    monkeypatch.setenv("HASHNODE_TOKEN", "fake")
+    monkeypatch.setenv("HASHNODE_PUBLICATION_ID", "pub123")
+    monkeypatch.setenv("CONTENT_OPS_NO_DOTENV", "1")
+    mod = load_script("publish_hashnode")
+    calls = []
+
+    def fake_post(url, *, headers, json, **kwargs):
+        calls.append(json)
+        r = MagicMock()
+        r.status_code = 200
+        r.json.return_value = {
+            "data": {"publishPost": {"post": {"id": "x", "url": "https://hn.hashnode.dev/x"}}}
+        }
+        return r
+
+    with patch("requests.post", side_effect=fake_post):
+        mod.main([str(md), "--confirm"])
+    assert len(calls) == 1
+    tags = calls[0]["variables"]["input"]["tags"]
+    assert len(tags) <= 5, f"Expected ≤5 tags, got {len(tags)}"
+
+
+def test_update_uses_existing_hashnode_id(tmp_path, monkeypatch):
+    """When hashnode_id is set in frontmatter, updatePost mutation should be used."""
+    md = tmp_path / "test.md"
+    md.write_text(
+        "---\ntitle: T\ndescription: D\ndate: 2026-01-01\ntags: [a]\nlang: en\n"
+        "hashnode_id: post123\nhashnode_url: https://hn.hashnode.dev/t\n---\nBody.\n"
+    )
+    monkeypatch.setenv("HASHNODE_TOKEN", "fake")
+    monkeypatch.setenv("HASHNODE_PUBLICATION_ID", "pub123")
+    monkeypatch.setenv("CONTENT_OPS_NO_DOTENV", "1")
+    mod = load_script("publish_hashnode")
+    calls = []
+
+    def fake_post(url, *, headers, json, **kwargs):
+        calls.append(json)
+        r = MagicMock()
+        r.status_code = 200
+        r.json.return_value = {
+            "data": {"updatePost": {"post": {"id": "post123", "url": "https://hn.hashnode.dev/t"}}}
+        }
+        return r
+
+    with patch("requests.post", side_effect=fake_post):
+        mod.main([str(md), "--confirm"])
+    assert len(calls) == 1
+    assert "updatePost" in calls[0]["query"] or "UpdatePost" in calls[0]["query"]

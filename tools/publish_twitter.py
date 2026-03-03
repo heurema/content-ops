@@ -26,7 +26,14 @@ MAX_TWEET_LEN = 280
 
 
 def validate_thread(tweets: list[str]) -> None:
-    """Exit non-zero if any tweet exceeds 280 characters."""
+    """Exit non-zero if any tweet exceeds 280 characters.
+
+    Note: uses Python len() which counts Unicode code points, not Twitter's
+    weighted character count (URLs are always 23 chars on Twitter). Articles
+    with many URLs may still fail at post time even if validation passes.
+    """
+    if not tweets:
+        return
     errors = []
     for i, tweet in enumerate(tweets, 1):
         if len(tweet) > MAX_TWEET_LEN:
@@ -50,7 +57,9 @@ def build_thread(article) -> list[str]:
     tweets.append(hook)
 
     # Tweets 2-N: key paragraphs from body (one per tweet)
-    paragraphs = [p.strip() for p in article.body.split("\n\n") if p.strip()]
+    # Normalize line endings before splitting (handles Windows CRLF)
+    normalized_body = article.body.replace("\r\n", "\n").replace("\r", "\n")
+    paragraphs = [p.strip() for p in normalized_body.split("\n\n") if p.strip()]
     # Strip markdown headings; skip code blocks
     paragraphs = [p.lstrip("#").strip() for p in paragraphs if not p.startswith("```")]
     for para in paragraphs[1:6]:  # max 5 body tweets
@@ -88,13 +97,23 @@ def post_thread(
     )
     ids = []
     prev_id = None
-    for tweet_text in tweets:
+    for i, tweet_text in enumerate(tweets):
         kwargs: dict = {"text": tweet_text}
         if prev_id:
             kwargs["in_reply_to_tweet_id"] = prev_id
-        resp = client.create_tweet(**kwargs)
-        prev_id = resp.data["id"]
-        ids.append(str(prev_id))
+        try:
+            resp = client.create_tweet(**kwargs)
+            prev_id = resp.data["id"]
+            ids.append(str(prev_id))
+        except tweepy.errors.TweepyException as exc:
+            posted_so_far = ", ".join(ids) if ids else "none"
+            print(
+                f"ERROR: Tweet {i + 1}/{len(tweets)} failed: {exc}\n"
+                f"  Already posted ({len(ids)} tweets): {posted_so_far}\n"
+                f"  Thread is PARTIAL — delete posted tweets manually if needed.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         time.sleep(1)  # avoid rate limits between tweets
     return ids
 

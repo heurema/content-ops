@@ -1,0 +1,6 @@
+.sigil/
+.signum/
+__pycache__/
+*.pyc
+*.pyo
+=6.0

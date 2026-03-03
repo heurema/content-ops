@@ -44,7 +44,18 @@ def parse_article(path: str) -> ArticleData:
 
     tags = data.get("tags", [])
     if isinstance(tags, str):
-        tags = [t.strip() for t in tags.split(",")]
+        tags = [t.strip() for t in tags.split(",") if t.strip()]
+    elif isinstance(tags, list):
+        tags = [str(t).strip() for t in tags if str(t).strip()]
+    else:
+        tags = []
+
+    devto_id: int | None = None
+    if data.get("devto_id") is not None:
+        try:
+            devto_id = int(data["devto_id"])
+        except (ValueError, TypeError):
+            pass  # invalid devto_id → treat as new article
 
     return ArticleData(
         title=data.get("title") or "",
@@ -56,7 +67,7 @@ def parse_article(path: str) -> ArticleData:
         body=body,
         canonical_url=canonical_url,
         content_hash=content_hash(body),
-        devto_id=data.get("devto_id"),
+        devto_id=devto_id,
         devto_url=data.get("devto_url"),
         hashnode_id=data.get("hashnode_id"),
         hashnode_url=data.get("hashnode_url"),
@@ -76,7 +87,7 @@ def update_frontmatter(path: str, updates: dict[str, Any]) -> None:
     data = yaml.safe_load(fm_text) or {}
     data.update(updates)
 
-    new_fm = yaml.dump(data, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    new_fm = yaml.safe_dump(data, allow_unicode=True, default_flow_style=False, sort_keys=False)
     new_text = f"---\n{new_fm}---\n{body}"
 
     dir_ = os.path.dirname(os.path.abspath(path))
