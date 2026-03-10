@@ -112,10 +112,17 @@ def content_hash(body: str) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
-def slugify_tag(tag: str) -> str:
-    """Convert tag string to lowercase-hyphenated slug."""
+def slugify_tag(tag: str, *, allow_hyphens: bool = True) -> str:
+    """Convert tag string to slug.
+
+    Args:
+        allow_hyphens: If False, strip hyphens (dev.to rejects them).
+    """
     tag = tag.strip().lower()
-    tag = re.sub(r"[^a-z0-9]+", "-", tag)
+    if allow_hyphens:
+        tag = re.sub(r"[^a-z0-9-]+", "", tag)
+    else:
+        tag = re.sub(r"[^a-z0-9]+", "", tag)
     tag = tag.strip("-")
     return tag
 

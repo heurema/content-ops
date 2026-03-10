@@ -42,7 +42,7 @@ MAX_TAGS = 4
 
 
 def build_payload(article: ArticleData) -> dict:
-    tags = [slugify_tag(t) for t in article.tags[:MAX_TAGS]]
+    tags = [slugify_tag(t, allow_hyphens=False) for t in article.tags[:MAX_TAGS]]
     return {
         "article": {
             "title": article.title,
