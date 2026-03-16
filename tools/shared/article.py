@@ -29,6 +29,12 @@ class ArticleData:
     hashnode_id: str | None = None
     hashnode_url: str | None = None
     twitter_thread_id: str | None = None
+    bluesky_post_id: str | None = None
+    bluesky_post_url: str | None = None
+    mastodon_post_id: str | None = None
+    mastodon_post_url: str | None = None
+    linkedin_post_id: str | None = None
+    linkedin_post_url: str | None = None
     frontmatter: dict[str, Any] = field(default_factory=dict)
 
 
@@ -72,6 +78,12 @@ def parse_article(path: str) -> ArticleData:
         hashnode_id=data.get("hashnode_id"),
         hashnode_url=data.get("hashnode_url"),
         twitter_thread_id=data.get("twitter_thread_id"),
+        bluesky_post_id=data.get("bluesky_post_id"),
+        bluesky_post_url=data.get("bluesky_post_url"),
+        mastodon_post_id=data.get("mastodon_post_id"),
+        mastodon_post_url=data.get("mastodon_post_url"),
+        linkedin_post_id=data.get("linkedin_post_id"),
+        linkedin_post_url=data.get("linkedin_post_url"),
         frontmatter=data,
     )
 
@@ -120,6 +132,7 @@ def slugify_tag(tag: str, *, allow_hyphens: bool = True) -> str:
     """
     tag = tag.strip().lower()
     if allow_hyphens:
+        tag = re.sub(r"\s+", "-", tag)
         tag = re.sub(r"[^a-z0-9-]+", "", tag)
     else:
         tag = re.sub(r"[^a-z0-9]+", "", tag)
