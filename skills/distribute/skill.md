@@ -30,7 +30,7 @@ If article was partially published, skip completed platforms and resume.
 ## Process
 
 1. Run content-qa skill first. If failures: stop and ask user to fix.
-2. Ask: Which platforms? (dev.to, Hashnode, Twitter/X, Bluesky, Mastodon, LinkedIn, HN, or all)
+2. Ask: Which platforms? (dev.to, Hashnode, Twitter/X, Bluesky, Mastodon, LinkedIn, HN, Newsletter, or all)
 3. For each platform in order:
    a. Show dry-run preview
    b. Ask for confirmation
