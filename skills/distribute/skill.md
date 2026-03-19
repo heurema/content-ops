@@ -29,7 +29,15 @@ If article was partially published, skip completed platforms and resume.
 
 ## Process
 
-1. Run content-qa skill first. If failures: stop and ask user to fix.
+1. **Pre-publish QA gate** (unless `--skip-qa` specified):
+   Run deterministic QA via `content_qa.py` first:
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/tools/content_qa.py "$ARTICLE_PATH" --format text
+   ```
+   - Exit code `2` (block): **stop** — show hard failures, do not publish.
+   - Exit code `1` (review): show issues, ask user: "QA flagged issues. Publish anyway? (yes/no)"
+   - Exit code `0` (pass): proceed to publishing.
+   - If `--skip-qa` flag is provided: skip this step entirely (explicit opt-out).
 2. Ask: Which platforms? (dev.to, Hashnode, Twitter/X, Bluesky, Mastodon, LinkedIn, HN, Newsletter, or all)
 3. For each platform in order:
    a. Show dry-run preview

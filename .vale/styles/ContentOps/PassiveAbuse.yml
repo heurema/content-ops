@@ -1,0 +1,5 @@
+extends: occurrence
+message: "Passive voice used too frequently (max %d times per document). Prefer active voice."
+level: suggestion
+max: 8
+token: '(?i)\b(was|were)\s+(being\s+)?\w+ed\s+by\b'

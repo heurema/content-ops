@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 *.pyo
 =6.0
+.nex/

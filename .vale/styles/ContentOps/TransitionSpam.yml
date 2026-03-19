@@ -1,0 +1,5 @@
+extends: occurrence
+message: "Transition word used too frequently (max %d times per document)."
+level: warning
+max: 6
+token: '(?i)\b(Moreover|Furthermore|Additionally|Consequently|Nevertheless)\b'

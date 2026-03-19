@@ -1,0 +1,25 @@
+extends: existence
+message: "AI fluff detected: '%s'. Prefer concrete, specific language."
+level: warning
+ignorecase: true
+tokens:
+  - delve into
+  - delves into
+  - tapestry
+  - multifaceted
+  - ever-evolving
+  - game-changer
+  - paradigm shift
+  - synergy
+  - holistic approach
+  - cutting-edge
+  - harness the power
+  - leverage
+  - robust and scalable
+  - robust solution
+  - robust framework
+  - seamless
+  - unlock the potential
+  - dive deep
+  - it is crucial to
+  - it is essential to

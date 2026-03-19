@@ -1,0 +1,10 @@
+extends: existence
+message: "List padding phrase detected: '%s'. Remove filler endings."
+level: suggestion
+ignorecase: true
+tokens:
+  - and much more
+  - and many others
+  - among other things
+  - to name a few
+  - the list goes on

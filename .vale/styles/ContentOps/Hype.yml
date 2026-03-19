@@ -1,0 +1,13 @@
+extends: existence
+message: "Hype language detected: '%s'. Use measured, accurate claims."
+level: warning
+ignorecase: true
+tokens:
+  - the ultimate
+  - revolutionary
+  - the most powerful tool
+  - the most powerful way
+  - the most powerful platform
+  - the first ever
+  - groundbreaking
+  - unparalleled

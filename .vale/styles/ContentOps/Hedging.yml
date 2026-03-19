@@ -1,0 +1,11 @@
+extends: existence
+message: "Hedging phrase detected: '%s'. State the point directly."
+level: suggestion
+ignorecase: true
+tokens:
+  - it is important to note that
+  - it is worth mentioning that
+  - it should be noted that
+  - needless to say
+  - as a matter of fact
+  - in the grand scheme of things

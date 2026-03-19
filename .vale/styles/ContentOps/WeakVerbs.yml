@@ -1,0 +1,11 @@
+extends: existence
+message: "Weak verb construction detected: '%s'. Use a direct, active verb."
+level: suggestion
+ignorecase: true
+tokens:
+  - aims to
+  - strives to
+  - seeks to
+  - endeavors to
+  - was designed to
+  - helps to facilitate

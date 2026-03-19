@@ -1,0 +1,12 @@
+extends: existence
+message: "Generic opening detected: '%s'. Start with something specific."
+level: suggestion
+ignorecase: true
+scope: paragraph
+tokens:
+  - "In today's rapidly"
+  - "In the world of"
+  - "In this article, we will"
+  - "Have you ever wondered"
+  - "In an era of"
+  - "It goes without saying"

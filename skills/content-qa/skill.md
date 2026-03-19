@@ -5,7 +5,19 @@ description: 'Use before publishing any article. Triggers: "check article", "pre
 
 Run pre-publish validation on the article. Check all platforms' requirements before sending.
 
-## Checks
+## Step 0 — Deterministic QA (always run first)
+
+Run `content_qa.py` for automated, deterministic checks before any LLM-driven analysis:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/tools/content_qa.py "$ARTICLE_PATH" --format text
+```
+
+Show the output. If exit code is `2` (block), stop immediately — hard failures must be fixed first.
+If exit code is `1` (review), show the issues and continue to LLM checks below for deeper analysis.
+If exit code is `0` (pass), still run the LLM checks below for editorial quality.
+
+## Step 1 — LLM-Driven Checks
 
 Read the article at the path the user provides. Run through `references/platform-limits.md`.
 
