@@ -1,0 +1,23 @@
+{
+  "author": {
+    "name": "heurema"
+  },
+  "description": "Content operations for indie developers who ship in public. Create, QA, and distribute technical articles to dev.to, Hashnode, Twitter/X, Bluesky, Mastodon, LinkedIn, and Hacker News.",
+  "homepage": "https://github.com/heurema/content-ops",
+  "keywords": [
+    "content",
+    "publishing",
+    "devto",
+    "hashnode",
+    "twitter",
+    "bluesky",
+    "mastodon",
+    "linkedin",
+    "hn",
+    "blogging"
+  ],
+  "license": "MIT",
+  "name": "content-ops",
+  "repository": "https://github.com/heurema/content-ops",
+  "version": "0.4.0"
+}
