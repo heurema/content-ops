@@ -1,7 +1,7 @@
 {
   "name": "content-ops",
   "description": "Content operations for indie developers who ship in public. Create, QA, and distribute technical articles to dev.to, Hashnode, Twitter/X, Bluesky, Mastodon, LinkedIn, and Hacker News.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "heurema"
   },
