@@ -1,8 +1,19 @@
-# content-ops
+```
+                    __             __
+  _________  ____  / /____  ____  / /_      ____  ____  _____
+ / ___/ __ \/ __ \/ __/ _ \/ __ \/ __/_____/ __ \/ __ \/ ___/
+/ /__/ /_/ / / / / /_/  __/ / / / /_/_____/ /_/ / /_/ (__  )
+\___/\____/_/ /_/\__/\___/_/ /_/\__/      \____/ .___/____/
+                                              /_/
+```
 
-Content operations for indie developers who ship in public.
+**Content operations for indie developers who ship in public.**
 
-Create, QA, and distribute technical articles to dev.to, Hashnode, Twitter/X, Bluesky, Mastodon, LinkedIn, and Hacker News — without leaving your editor.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+> Create, QA, and distribute technical articles to dev.to, Hashnode, Twitter/X, Bluesky, Mastodon, LinkedIn, and Hacker News — without leaving your editor.
+
+---
 
 ## Install
 
